@@ -1,0 +1,50 @@
+# ============================================================
+# COMPLETE AI CHATBOT - Android/Termux Requirements
+# ============================================================
+# This project is designed to run on Android via Termux.
+# Termux is the primary and recommended execution environment.
+#
+# Core ML/NLP Dependencies
+torch>=2.0.0
+nltk>=3.8.1
+numpy>=1.24.0
+
+# Knowledge Enhancement & Web Integration
+wikipedia>=1.4.0
+textblob>=0.17.1
+requests>=2.31.0
+google-search-results>=2.4.2
+
+# Android/Termux Integration (Required for STT/TTS features)
+termux-api
+
+# ============================================================
+# Installation Instructions for Android/Termux (Primary)
+# ============================================================
+# 1. Install Termux App:
+#    - Download Termux from F-Droid or Google Play Store
+#
+# 2. Set Up Termux Environment:
+#    pkg update && pkg upgrade
+#    pkg install python
+#    pkg install termux-api
+#
+# 3. Install Termux API APK:
+#    - Download and install "Termux:API" APK separately
+#    - Required for STT (speech-to-text) and TTS (text-to-speech)
+#
+# 4. Install Python Dependencies:
+#    pip install -r requirements.txt
+#
+# 5. Run the Application:
+#    python main.py
+#
+# ============================================================
+# Notes:
+# ============================================================
+# - This codebase is optimized for Android/Termux
+# - All dependencies have graceful fallbacks via safe import guards
+# - Features will degrade gracefully if packages are unavailable
+# - STT/TTS features require termux-api APK to be installed
+# - If torch.cat() error on first run, re-run (known PyTorch initialization quirk)
+# - Desktop fallbacks available for STT/TTS when not in Termux
