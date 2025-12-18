@@ -128,14 +128,16 @@ def main():
         except Exception:
             pass
     dc.download_nltk_data()
+    print('dowload completed and back to main file')
     sl.speak('Upsilon is booting up, please wait a moment')
 
     # instantiate chatbot
     cyclobot = CompleteAIChatbot()
+    print('instantiation done')
 
     # Setup (load data, build dictionary, initialize model)
     if not cyclobot.setup():
-        # print(" Failed to setup AI!")
+        print(" Failed to setup AI!")
         sl.speak('i am not setup yet')
         return
     # Show NLTK capabilities
