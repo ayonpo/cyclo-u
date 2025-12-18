@@ -45,6 +45,7 @@ def download_nltk_data():
         nltk.download('wordnet')
         nltk.download('vader_lexicon')
         print("✅ NLTK data downloaded successfully!")
+    return
 #
 # Call this early only if NLTK is available
 if nltk is not None:
