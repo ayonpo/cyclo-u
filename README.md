@@ -280,7 +280,7 @@ If you use this chatbot in research or production, please cite:
 
 ```bibtex
 @software{upsilon_chatbot_2024,
-  author = {Your Name},
+  author = Ayomiposi Akinwamide,
   title = {Complete AI Chatbot - Upsilon},
   year = {2024},
   url = {https://github.com/yourusername/complete-ai-chatbot}
