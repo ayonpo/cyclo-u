@@ -49,10 +49,8 @@ def speak(words):
         # Try subprocess call; if Termux not present this will raise and we
         # fallback to printing which is safe on desktops.
         command = ["termux-tts-speak", str(words)]
-        try:
-            subprocess.run(command, check=True)
-        except Exception:
-            print(words)
+        subprocess.run(command, check=True)
+        
 
 
 def listen2():

@@ -107,10 +107,11 @@ def check_external_dependencies(mapping=None, abort_on_missing=False):
 # ========================
 
 
-def main():
+def root():
     print("Initiating Upsilon boot up sequence")
     print("This may take a moment...\n")
     # Lightweight dependency check using built-in defaults (no requirements parsing)
+    """"
     try:
         missing, aborted = check_external_dependencies(mapping=None, abort_on_missing=False)
     except ImportError as exc:
@@ -127,6 +128,8 @@ def main():
             sl.speak('Warning: some optional packages are missing. Functionality may be reduced.')
         except Exception:
             pass
+            
+            """
     dc.download_nltk_data()
     print('dowload completed and back to main file')
     sl.speak('Upsilon is booting up, please wait a moment')
@@ -136,6 +139,7 @@ def main():
     print('instantiation done')
 
     # Setup (load data, build dictionary, initialize model)
+    
     if not cyclobot.setup():
         print(" Failed to setup AI!")
         sl.speak('i am not setup yet')
@@ -150,10 +154,10 @@ def main():
 
     # Start chatting!
 
-    sl.speak('My Training is complete, with emotional Intelligence, real time knowledge and Continuous learning capability')
+    sl.speak('My Training is complete')
     cyclobot.interactive_chat()
 
 if __name__ == "__main__":
     #testing the speach
-    sl.speak('this is about to setup Cyclo upsilon')
-    main()
+    print('this is about to setup Cyclo upsilon')
+    root()

@@ -97,8 +97,7 @@ class CompleteAIChatbot:
                 print(f'Epoch {epoch}, Loss: {loss.item():.4f}')
 
         #save the trained model
-
-
+        #torch.save(self.model.state_dict(), 'complete_ai_chatbot_model.pth')
         print("🎉 Training complete!")
 
     def chat(self, user_input):
@@ -159,8 +158,9 @@ class CompleteAIChatbot:
             keywords = self.knowledge_enhancer.extract_keywords(user_input)
             if keywords:
                 topic = " ".join(keywords[:2])
-                return f"🔍 Let me look up information about {topic}..."
-            # In full implementation, you'd call Wikipedia here
+                #return f"🔍 Let me look up information about {topic}..."
+                return self.knowledge_enhancer.wikipedia_lookup(topic) 
+            
 
         elif 'time' in input_lower:
             now = datetime.datetime.now()
@@ -213,9 +213,8 @@ class CompleteAIChatbot:
             return
 
         print("\n" + "="*60)
-        print("🤖 COMPLETE AI CHATBOT READY! 🚀")
+        print("🤖 Hi, i am Upsilon C! 🚀")
         print("="*60)
-        print("Features: Emotional IQ 🎭 + Knowledge 🌐 + Learning 🧠")
         print("Type 'quit' to exit")
         print()
 
@@ -240,7 +239,7 @@ class CompleteAIChatbot:
                     print(f"Bot: I remember {len(self.conversation_memory)} conversations!")
                     #sl.speak("Bot: I remember {len(self.conversation_memory)} conversations!")
                     continue
-                #sl.speak("i am here now")
+                #sl.speak("i am here now at memory")
                 response = self.chat(user_input)
                 print(f"Bot: {response}")
                 sl.speak(response)
@@ -253,7 +252,7 @@ class CompleteAIChatbot:
                 print(f"Bot: Sorry, I had an error. Lets continue!")
                 #sl.speak("Sorry, I had an error. Let's continue!")
 
-            #sl.speak("i am here below")
+            #sl.speak("if what is here is here i just dont know again")
             #response = self.chat(user_input)
             #print(f"Bot: {response}")
             #sl.speak(response)
