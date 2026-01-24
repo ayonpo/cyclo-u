@@ -2,6 +2,8 @@
 
 try:
     import torch.nn as nn
+    import torch
+    import torch.nn.functional as F 
 
     class EnhancedChatBrain(nn.Module):
         def __init__(self, vocab_size, hidden_size=128, embedding_dim=64, num_layers=2):
@@ -14,15 +16,27 @@ try:
             self.dropout = nn.Dropout(0.2)
             self.fc = nn.Linear(hidden_size, vocab_size)
 
-        def forward(self, x, hidden=None):
+        def forward(self, x, hidden=None, return_probs=False):
             # understand words
             x = self.embedding(x)
             # Remember context
             lstm_out, hidden = self.lstm(x, hidden)
-            last_output = lstm_out[:, -1, :]
-            # think of the response
-            output = self.fc(self.dropout(last_output))
-            return output, hidden
+            # think of the response - output for each timestep
+            logits = self.fc(self.dropout(lstm_out))  # (batch, seq_len, vocab_size)
+
+            if return_probs:
+                probs = F.softmax(logits, dim=-1)
+                return probs, hidden
+            else:
+                return logits, hidden
+        
+        def predict_with_confidence(self, x):
+            """Get prediction with confidence scores"""
+            with torch.no_grad():
+                probs, _ = self.forward(x, return_probs=True)
+                top_probs, top_indices = torch.topk(probs, k=3, dim=1)
+                return top_probs, top_indices
+
 except Exception:
     # Provide a clear fallback when PyTorch is not installed so imports don't fail.
     class EnhancedChatBrain:

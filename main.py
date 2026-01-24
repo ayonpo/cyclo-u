@@ -39,12 +39,51 @@ try:
 except Exception:
     TextBlob = None
 
-from core import CompleteAIChatbot
+from core import AutoLearningChatbot
 import comms as sl
 import dcore as dc
 # Dependency checker for external packages (non-blocking by default)
 import importlib
 import importlib.util
+
+
+def check_file_imports():
+    """Check that all project files can be imported successfully"""
+    print("🔍 Checking file imports and integrity...")
+    
+    files_to_check = [
+        ('core', 'CompleteAIChatbot, AutoLearningChatbot'),
+        ('cunn', 'EnhancedChatBrain'),
+        ('dcore', 'TrainingManager, SmartDictionary'),
+        ('l_brain', 'EmotionalIntelligence'),
+        ('r_brain', 'KnowledgeEnhancer'),
+        ('comms', 'speak, listen'),
+        ('tcore', 'IncrementalTrainer')
+    ]
+    
+    all_good = True
+    
+    for module_name, expected_classes in files_to_check:
+        try:
+            module = importlib.import_module(module_name)
+            print(f"✅ {module_name}.py imported successfully")
+            
+            # Check if expected classes/functions exist
+            for item in expected_classes.split(', '):
+                if hasattr(module, item.strip()):
+                    print(f"   ✓ {item} found")
+                else:
+                    print(f"   ❌ {item} NOT found in {module_name}")
+                    all_good = False
+                    
+        except ImportError as e:
+            print(f"❌ Failed to import {module_name}.py: {e}")
+            all_good = False
+        except Exception as e:
+            print(f"⚠️  {module_name}.py imported but has issues: {e}")
+            all_good = False
+    
+    return all_good
 
 
 def check_external_dependencies(mapping=None, abort_on_missing=False):
@@ -62,7 +101,7 @@ def check_external_dependencies(mapping=None, abort_on_missing=False):
             "wikipedia": ["wikipedia"],
             "textblob": ["textblob"],
             "requests": ["requests"],
-            "googlesearch": ["googlesearch", "google"] ,
+            "googlesearch": ["googlesearch"],
             "termux-api": ["termux_api", "termux"]
         }
 
@@ -110,6 +149,15 @@ def check_external_dependencies(mapping=None, abort_on_missing=False):
 def root():
     print("Initiating Upsilon boot up sequence")
     print("This may take a moment...\n")
+    
+    # Check file integrity first
+    print("📁 Checking project file integrity...")
+    if not check_file_imports():
+        print("❌ File integrity check failed! Cannot proceed.")
+        sl.speak('file integrity check failed')
+        return
+    print("✅ All project files validated successfully!\n")
+    
     # Lightweight dependency check using built-in defaults (no requirements parsing)
     """"
     try:
@@ -131,33 +179,33 @@ def root():
             
             """
     dc.download_nltk_data()
-    print('dowload completed and back to main file')
-    sl.speak('Upsilon is booting up, please wait a moment')
+    #print('dowload completed and back to main file')
+    sl.speak('booting up, wait for my initialisation')
 
     # instantiate chatbot
-    cyclobot = CompleteAIChatbot()
+    cyclobot = AutoLearningChatbot()
     print('instantiation done')
 
     # Setup (load data, build dictionary, initialize model)
     
     if not cyclobot.setup():
         print(" Failed to setup AI!")
-        sl.speak('i am not setup yet')
+        sl.speak('my set up is missing')
         return
     # Show NLTK capabilities
     #cyclobot.show_nltk_capabilities()
 
     #Train the model
     print("\n⏳ Training AI...")
-    sl.speak('about to begain training, please be patient')
-    cyclobot.train(epochs=100, learning_rate=0.01)
+    sl.speak('data training commencing')
+    cyclobot.train(epochs=200, learning_rate=0.01)
 
     # Start chatting!
 
-    sl.speak('My Training is complete')
+    sl.speak('Training is complete')
     cyclobot.interactive_chat()
 
 if __name__ == "__main__":
     #testing the speach
-    print('this is about to setup Cyclo upsilon')
+    print('Cyclo upsilon setup starting')
     root()

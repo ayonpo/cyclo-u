@@ -125,3 +125,33 @@ class KnowledgeEnhancer:
         print(f"📊 Complexity: {complexity} (avg {avg_sentence_length:.1f} words/sentence)")
 
         return complexity
+    
+    def scrape_conversation_data(url=None):
+        """Scrape conversation data from websites"""
+        import requests
+        from bs4 import BeautifulSoup
+    
+        if url is None:
+            # Example: Movie dialogue dataset
+            url = "https://www.cs.cornell.edu/~cristian/Cornell_Movie-Dialogs_Corpus.html"
+    
+        try:
+            response = requests.get(url, timeout=10)
+            soup = BeautifulSoup(response.text, 'html.parser')
+        
+            new_pairs = []
+        
+            # Example: Extract dialogues (adjust based on website structure)
+            dialogues = soup.find_all('div', class_='dialogue')  # Adjust selector
+        
+            for dialogue in dialogues[:100]:  # Limit to 100 dialogues
+                # Parse question-answer pairs
+                # This depends on website structure
+                pass
+        
+            print(f"🌐 Scraped {len(new_pairs)} conversation pairs")
+            return new_pairs
+        
+        except Exception as e:
+            print(f"❌ Web scraping failed: {e}")
+            return []

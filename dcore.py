@@ -11,6 +11,7 @@ except Exception:
     torch = None
     
 
+import csv
 import re
 
 try:
@@ -197,7 +198,7 @@ class TrainingManager:
         # 2. PERSONAL & IDENTITY
         # ========================
         personal = [
-            ("what is your name", "i'm your personal chatbot! you can call me Alex! what should I call you?"),
+            ("what is your name", "i'm your personal chatbot! you can call me Upsilon! what should I call you?"),
             ("who are you", "i'm your AI friend here to chat, help, and keep you company!"),
             ("who made you", "i was created by an awesome developer learning about AI!"),
             ("what are you", "i'm a chatbot powered by machine learning! i learn from our conversations!"),
@@ -397,9 +398,165 @@ class TrainingManager:
 
 
     def build_dictionary(self):
-            dictionary = SmartDictionary()
-            for question, answer in self.training_pairs:
-                dictionary.add_sentence(question)
-                dictionary.add_sentence(answer)
-            print(f"📖 Dictionary built with {dictionary.vocab_size} words")
-            return dictionary
+        dictionary = SmartDictionary()
+        for question, answer in self.training_pairs:
+            dictionary.add_sentence(question)
+            dictionary.add_sentence(answer)
+        print(f"📖 Dictionary built with {dictionary.vocab_size} words")
+        return dictionary
+    
+    def import_from_csv(self, filename="training_data.csv"):
+        """Import training data from CSV file"""
+        new_pairs = []
+    
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if 'input' in row and 'output' in row:
+                        new_pairs.append((row['input'], row['output']))
+        
+            self.training_pairs.extend(new_pairs)
+        
+            # Update dictionary
+            for question, answer in new_pairs:
+                self.chatbot.dictionary.add_sentence(question)
+                self.chatbot.dictionary.add_sentence(answer)
+        
+            print(f"📥 Imported {len(new_pairs)} pairs from CSV")
+            return len(new_pairs)
+        
+        except FileNotFoundError:
+            print(f"❌ CSV file {filename} not found!")
+            return 0
+    
+    def import_from_text_file(self, filename="conversations.txt", separator="|"):
+        """Import from simple text file format"""
+        new_pairs = []
+    
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if separator in line:
+                        parts = line.split(separator, 1)
+                        if len(parts) == 2:
+                            question, answer = parts[0].strip(), parts[1].strip()
+                            if question and answer:
+                                new_pairs.append((question, answer))
+        
+            self.training_pairs.extend(new_pairs)
+        
+            # Update dictionary
+            for question, answer in new_pairs:
+                self.chatbot.dictionary.add_sentence(question)
+                self.chatbot.dictionary.add_sentence(answer)
+        
+            print(f"📥 Imported {len(new_pairs)} pairs from text file")
+            return len(new_pairs)
+        
+        except FileNotFoundError:
+            print(f"❌ Text file {filename} not found!")
+            return 0
+
+
+#interactive trainer class
+class InteractiveTrainer:
+    def __init__(self, trainMan):
+        self.chatbot = trainMan
+        self.training_mode = False
+    
+    def start_training_session(self):
+        """Start interactive training session"""
+        print("\n" + "="*60)
+        print("🎓 INTERACTIVE TRAINING MODE")
+        print("="*60)
+        print("Commands:")
+        print("  'add [question] | [answer]' - Add training pair")
+        print("  'show' - Show current training data")
+        print("  'train [epochs]' - Train with current data")
+        print("  'save' - Save training data to file")
+        print("  'exit' - Exit training mode")
+        print()
+        
+        self.training_mode = True
+        
+        while self.training_mode:
+            command = input("Trainer> ").strip()
+            
+            if command.lower() == 'exit':
+                self.training_mode = False
+                print("Exited training mode")
+                break
+            
+            elif command.lower() == 'show':
+                self.show_training_data()
+            
+            elif command.lower().startswith('add '):
+                self.add_training_pair(command[4:])
+            
+            elif command.lower().startswith('train'):
+                self.train_command(command)
+            
+            elif command.lower() == 'save':
+                self.save_training_data()
+            
+            else:
+                print("❌ Unknown command. Type 'help' for commands.")
+    
+    def add_training_pair(self, pair_str):
+        """Add a training pair from command"""
+        if '|' not in pair_str:
+            print("❌ Format: add [question] | [answer]")
+            return
+        
+        question, answer = pair_str.split('|', 1)
+        question, answer = question.strip(), answer.strip()
+        
+        if not question or not answer:
+            print("❌ Both question and answer required")
+            return
+        
+        self.chatbot.training_pairs.append((question, answer))
+        self.chatbot.dictionary.add_sentence(question)
+        self.chatbot.dictionary.add_sentence(answer)
+        
+        print(f"✅ Added: '{question}' -> '{answer}'")
+        print(f"📊 Total pairs: {len(self.chatbot.training_pairs)}")
+    
+    def show_training_data(self):
+        """Show current training data"""
+        print(f"\n📚 TRAINING DATA ({len(self.chatbot.training_pairs)} pairs):")
+        print("-" * 50)
+        
+        for i, (q, a) in enumerate(self.chatbot.training_pairs[-10:], 1):  # Show last 10
+            print(f"{i:3d}. Q: {q[:40]}{'...' if len(q) > 40 else ''}")
+            print(f"     A: {a[:40]}{'...' if len(a) > 40 else ''}")
+            print()
+    
+    def train_command(self, command):
+        """Handle train command"""
+        parts = command.split()
+        epochs = 50  # Default
+        
+        if len(parts) > 1:
+            try:
+                epochs = int(parts[1])
+            except:
+                print("❌ Invalid epoch count")
+                return
+        
+        print(f"🔄 Training for {epochs} epochs...")
+        self.chatbot.train(epochs=epochs)
+        print("✅ Training complete!")
+    
+    def save_training_data(self, filename="training_data.json"):
+        """Save training data to file"""
+        data = []
+        for question, answer in self.chatbot.training_pairs:
+            data.append({"input": question, "output": answer})
+        
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        
+        print(f"💾 Saved {len(data)} training pairs to {filename}")

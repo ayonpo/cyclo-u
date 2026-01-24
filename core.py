@@ -1,12 +1,15 @@
 """Complete AI chatbot with NLTK integration, emotional intelligence, and knowledge enhancement."""
 
 import datetime
+import json
+import random
 from collections import deque
 
 try:
     import torch
     import torch.nn as nn
     import torch.optim as optim
+    import torch.nn.functional as F 
 except Exception:
     torch = None
     nn = None
@@ -22,6 +25,7 @@ from cunn import EnhancedChatBrain
 from dcore import TrainingManager, SmartDictionary
 from l_brain import EmotionalIntelligence
 from r_brain import KnowledgeEnhancer
+from tcore import IncrementalTrainer
 import comms as sl
 
 # Note: `SmartDictionary` and `TrainingManager` implementations are provided
@@ -40,7 +44,7 @@ class CompleteAIChatbot:
         self.conversation_memory = deque(maxlen=50)
 
     def setup(self):
-        print("🔄 Setting up your AI chatbot with NLTK...")
+        print("🔄 Setting up AI chatbot with NLTK...")
 
         if not self.trainer.load_training_data():
             return False
@@ -59,11 +63,12 @@ class CompleteAIChatbot:
         return True
 
 
-    def train(self, epochs=100, learning_rate=0.01):
+    def train(self, epochs=180, learning_rate=0.01):
         if self.model is None:
             return
 
         print("🎯 Training AI...")
+        sl.speak("training commencing")
 
         # Prepare training data
 
@@ -75,13 +80,13 @@ class CompleteAIChatbot:
             a_indices = self.dictionary.sentence_to_indices(answer)
 
             X_train.append(q_indices)
-            y_train.append(a_indices[:, 0])
+            y_train.append(a_indices)
 
         X_train = torch.cat(X_train, dim=0)
         y_train = torch.cat(y_train, dim=0)
 
         # Training setup
-        criterion = nn.CrossEntropyLoss(ignore_index=0)
+        criterion = nn.CrossEntropyLoss(ignore_index=0)  # ignore <PAD>
         optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
 
         # Training loop
@@ -89,7 +94,7 @@ class CompleteAIChatbot:
         for epoch in range(epochs):
             optimizer.zero_grad()
             output, _ = self.model(X_train)
-            loss = criterion(output, y_train)
+            loss = criterion(output.view(-1, self.dictionary.vocab_size), y_train.view(-1))
             loss.backward()
             optimizer.step()
 
@@ -102,7 +107,7 @@ class CompleteAIChatbot:
 
     def chat(self, user_input):
         if self.model is None:
-            return "I'm not ready yet! Please train me first."
+            return "not ready yet! activate model training first."
 
         self.model.eval()
 
@@ -115,26 +120,28 @@ class CompleteAIChatbot:
 
         # Knowledge detection with NLTK keyword extraction
         knowledge_response = self.get_knowledge_response(user_input)
+        """
+        method for response:version one 1
+        """
+        input_tensor = self.dictionary.sentence_to_indices(user_input)
+        #new input starts here
 
-        # AI model response
-        try:
-            input_tensor = self.dictionary.sentence_to_indices(user_input)
-            with torch.no_grad():
-                output, _ = self.model(input_tensor)
-                predicted_idx = torch.argmax(output, dim=1).item()
+        with torch.no_grad():
 
-            ai_word = self.dictionary.idx2word.get(predicted_idx, "<UNK>")
-
-            if ai_word != "<UNK>":
-                ai_response = ai_word.capitalize() + "!"
-            else:
-                ai_response = emotional_response
-
-        except Exception as e:
-            # Model inference failed; fallback to emotional response.
-            print(f"Model inference error: {e}")
-            ai_response = emotional_response
-
+            output, _ = self.model(input_tensor)
+            predicted_indices = torch.argmax(output, dim=-1)[0]  # (seq_len,)
+            
+            words = []
+            for idx in predicted_indices:
+                idx = idx.item()
+                if idx == 0:  # <PAD>
+                    break
+                word = self.dictionary.idx2word.get(idx, "")
+                if word and word != "<UNK>":
+                    words.append(word)
+            
+            ai_response = " ".join(words).capitalize() + "!" if words else "I don't know what to say."
+        
         # Combine responses with NLTK insights
         final_response = f"{emotional_response} {ai_response}"
 
@@ -144,9 +151,6 @@ class CompleteAIChatbot:
         # Add complexity note for long inputs
         if complexity == "complex":
             final_response += "\n\n💡 That was quite detailed! Thanks for the comprehensive input."
-
-        # Remember conversation
-        self.remember_conversation(user_input, final_response)
 
         return final_response
 
@@ -159,7 +163,7 @@ class CompleteAIChatbot:
             if keywords:
                 topic = " ".join(keywords[:2])
                 #return f"🔍 Let me look up information about {topic}..."
-                return self.knowledge_enhancer.wikipedia_lookup(topic) 
+                return self.knowledge_enhancer.wikipedia_lookup(topic)
             
 
         elif 'time' in input_lower:
@@ -190,26 +194,26 @@ class CompleteAIChatbot:
 
         # Tokenization
         tokens = word_tokenize(test_text)
-        print(f"📝 Tokenization: {tokens[:5]}...")
+        #print(f"📝 Tokenization: {tokens[:5]}...")
 
         # Stopword removal
         filtered = [token for token in tokens if token not in self.dictionary.stop_words]
-        print(f"🚫 Stopwords removed: {filtered[:5]}...")
+        #print(f"🚫 Stopwords removed: {filtered[:5]}...")
 
         # Stemming
         stemmed = [self.dictionary.stemmer.stem(token) for token in filtered[:5]]
-        print(f"✂️ Stemming: {stemmed}")
+        #print(f"✂️ Stemming: {stemmed}")
 
         # Sentiment analysis
         sentiment = self.ei_system.sia.polarity_scores(test_text)
-        print(f"🎭 Sentiment Analysis: {sentiment}")
+        #print(f"🎭 Sentiment Analysis: {sentiment}")
 
-        print("✅ NLTK is fully integrated and working!")
+        #print("✅ NLTK is fully integrated and working!")
 
 
     def interactive_chat(self):
         if self.model is None:
-            print("❌ Chatbot not trained! Run setup() and train() first.")
+            print("❌ Cyclo Upsi not trained! Run setup() and train() first.")
             return
 
         print("\n" + "="*60)
@@ -217,7 +221,6 @@ class CompleteAIChatbot:
         print("="*60)
         print("Type 'quit' to exit")
         print()
-
         while True:
             try:
                 user_input = input("You: ").strip() #sl.listen2() #input("You: ").strip()
@@ -225,6 +228,7 @@ class CompleteAIChatbot:
 
                 if user_input.lower() == 'quit':
                     print("Bot: Goodbye! Thanks for chatting! 👋")
+                    sl.speak('hope you had a good time!')
 
                     break
                 elif user_input.lower() == 'train':
@@ -237,12 +241,59 @@ class CompleteAIChatbot:
                     continue
                 elif user_input.lower() == 'memory':
                     print(f"Bot: I remember {len(self.conversation_memory)} conversations!")
-                    #sl.speak("Bot: I remember {len(self.conversation_memory)} conversations!")
+                    sl.speak(f" I remember {len(self.conversation_memory)} conversations!")
                     continue
+                elif user_input.lower() == 'add data':
+                    # Bulk add data
+                    print("\n📥 BULK DATA IMPORT")
+                    print("1. Import from JSON")
+                    print("2. Import from CSV")
+                    print("3. Import from text file")
+                    print("4. Add manually")
+            
+                    choice = input("Choice: ").strip()
+            
+                    if choice == '1':
+                        filename = input("JSON filename: ").strip() or "additional_training.json"
+                        self.trainer.load_training_data(filename)
+                    elif choice == '2':
+                        filename = input("CSV filename: ").strip() or "training_data.csv"
+                        self.trainer.import_from_csv(filename)
+                    elif choice == '3':
+                        filename = input("Text filename: ").strip() or "conversations.txt"
+                        self.trainer.import_from_text_file(filename)
+                                  
+                        
                 #sl.speak("i am here now at memory")
-                response = self.chat(user_input)
-                print(f"Bot: {response}")
-                sl.speak(response)
+                elif user_input.lower() == 'chat':
+                    while True:
+                        sl.speak("you can type exit or say the word" \
+                        " exit to go back with the learnig mode" \
+                        "type learning to activate learning mode and confirm your choice by" \
+                        "typing yes after the prompt")
+                        chat_input = input("You (type 'exit' to stop chatting): ").strip()
+                        if chat_input.lower() == 'back' or chat_input.lower() == 'exit':
+                            break
+                        elif chat_input.lower() == 'learning':
+                            re_affirm= input("please confirm you are activating learnig mode")
+                            if re_affirm.lower() == 'yes':
+                                response=self.chat_and_learn(chat_input)
+                                sl.speak(response)
+                            else:
+                                pass
+                        response = self.chat(chat_input)
+                        print(f"Bot: {response}")
+                        sl.speak(response)
+                    #response = self.chat(user_input)
+                    #print(f"Bot: {response}")
+                    #sl.speak(response)
+                else:
+                    print("❌ Unknown command. Try: chat, train, add data, exit")
+                    sl.speak("Unknown command. Try: chat, train, add data, exit")
+                
+                #response = self.chat(user_input)
+                
+                #sl.speak(response)
 
             except KeyboardInterrupt:
                 print("\nBot: Goodbye! 👋")
@@ -250,9 +301,168 @@ class CompleteAIChatbot:
                 break
             except Exception as e:
                 print(f"Bot: Sorry, I had an error. Lets continue!")
-                #sl.speak("Sorry, I had an error. Let's continue!")
+                sl.speak("Sorry, I had an error. Let's continue!")
 
-            #sl.speak("if what is here is here i just dont know again")
-            #response = self.chat(user_input)
-            #print(f"Bot: {response}")
-            #sl.speak(response)
+
+class IncrementalTrainer:
+    def __init__(self, chatbot):
+        self.chatbot = chatbot
+        self.new_data_buffer = []
+        self.retrain_every = 10  # Retrain after 10 new examples
+        self.training_history = []
+    
+    def add_conversation(self, user_input, bot_response, confidence=1.0):
+        """Add a conversation to training buffer"""
+        if confidence > 0.7:  # Only add high-confidence responses
+            self.new_data_buffer.append((user_input, bot_response))
+            print(f"📝 Added to training buffer: '{user_input}' -> '{bot_response}'")
+            
+            # Check if we should retrain
+            if len(self.new_data_buffer) >= self.retrain_every:
+                self.retrain_with_new_data()
+    
+    def retrain_with_new_data(self):
+        """Retrain model with accumulated new data"""
+        if not self.new_data_buffer:
+            return
+        
+        print(f"\n🔄 Retraining with {len(self.new_data_buffer)} new examples...")
+        
+        # Add to main training data
+        self.chatbot.trainer.training_pairs.extend(self.new_data_buffer)
+        
+        # Update dictionary
+        for question, answer in self.new_data_buffer:
+            self.chatbot.dictionary.add_sentence(question)
+            self.chatbot.dictionary.add_sentence(answer)
+        
+        # Rebuild model with new vocabulary size
+        old_vocab_size = self.chatbot.model.fc.out_features
+        new_vocab_size = self.chatbot.dictionary.vocab_size
+        
+        if new_vocab_size > old_vocab_size:
+            print(f"📈 Expanding vocabulary from {old_vocab_size} to {new_vocab_size} words")
+            self.expand_model_vocabulary(new_vocab_size)
+        
+        # Continue training
+        self.continue_training(epochs=50)
+        
+        # Clear buffer
+        self.new_data_buffer.clear()
+        print("✅ Retraining complete!")
+    
+    def expand_model_vocabulary(self, new_vocab_size):
+        """Expand model to handle new vocabulary"""
+        # Get current model parameters
+        old_fc = self.chatbot.model.fc
+        
+        # Create new fully connected layer with expanded output
+        new_fc = nn.Linear(old_fc.in_features, new_vocab_size)
+        
+        # Copy old weights (for existing vocabulary)
+        with torch.no_grad():
+            new_fc.weight[:old_fc.out_features] = old_fc.weight
+            new_fc.bias[:old_fc.out_features] = old_fc.bias
+            
+            # Initialize new weights randomly
+            nn.init.xavier_uniform_(new_fc.weight[old_fc.out_features:])
+            nn.init.zeros_(new_fc.bias[old_fc.out_features:])
+        
+        # Replace the layer
+        self.chatbot.model.fc = new_fc
+        print(f"🔧 Model expanded to handle {new_vocab_size} words")
+    
+    def continue_training(self, epochs=50, learning_rate=0.001):
+        """Continue training from where we left off"""
+        print(f"🎯 Continuing training for {epochs} epochs...")
+        
+        # Prepare all training data
+        X_train = []
+        y_train = []
+        
+        for question, answer in self.chatbot.trainer.training_pairs:
+            q_indices = self.chatbot.dictionary.sentence_to_indices(question)
+            a_indices = self.chatbot.dictionary.sentence_to_indices(answer)
+            
+            X_train.append(q_indices)
+            y_train.append(a_indices)
+        
+        X_train = torch.cat(X_train, dim=0)
+        y_train = torch.cat(y_train, dim=0)
+        
+        # Training setup
+        criterion = nn.CrossEntropyLoss(ignore_index=0)
+        optimizer = optim.Adam(self.chatbot.model.parameters(), lr=learning_rate)
+        
+        # Training loop
+        self.chatbot.model.train()
+        for epoch in range(epochs):
+            optimizer.zero_grad()
+            output, _ = self.chatbot.model(X_train)
+            loss = criterion(output.view(-1, self.chatbot.dictionary.vocab_size), y_train.view(-1))
+            loss.backward()
+            optimizer.step()
+            
+            if epoch % 10 == 0:
+                print(f'  Epoch {epoch}, Loss: {loss.item():.4f}')
+        
+        self.training_history.append({
+            'epochs': epochs,
+            'new_samples': len(self.new_data_buffer),
+            'vocab_size': self.chatbot.dictionary.vocab_size,
+            'timestamp': datetime.datetime.now().isoformat()
+        })
+
+class AutoLearningChatbot(CompleteAIChatbot):
+    def __init__(self):
+        super().__init__()
+        self.incremental_trainer = IncrementalTrainer(self)
+        self.learning_log = []
+        
+    def chat_and_learn(self, user_input):
+        """Chat and automatically learn from good conversations"""
+        # Get response
+        response = self.chat(user_input)
+        
+        # Ask for feedback (optional)
+        if random.random() < 0.1:  # 10% chance to ask for feedback
+            print("\n🤔 Was that response helpful? (yes/no/correct me)")
+            feedback = input("Your feedback: ").strip().lower()
+            
+            if feedback.startswith('correct'):
+                print("📝 Please provide the correct response:")
+                corrected = input("Correct response: ").strip()
+                self.learn_from_correction(user_input, corrected)
+            elif 'yes' in feedback:
+                self.learn_from_success(user_input, response)
+        
+        return response
+    
+    def learn_from_success(self, user_input, response, min_confidence=0.6):
+        """Learn from successful responses"""
+        # Check if this is worth learning
+        if len(user_input.split()) >= 2 and len(response.split()) >= 1:
+            self.incremental_trainer.add_conversation(user_input, response)
+            self.learning_log.append({
+                'type': 'auto_learn',
+                'input': user_input,
+                'response': response,
+                'timestamp': datetime.datetime.now().isoformat()
+            })
+    
+    def learn_from_correction(self, user_input, corrected_response):
+        """Learn from user corrections"""
+        self.incremental_trainer.add_conversation(user_input, corrected_response)
+        self.learning_log.append({
+            'type': 'user_correction',
+            'input': user_input,
+            'corrected_response': corrected_response,
+            'timestamp': datetime.datetime.now().isoformat()
+        })
+        print("✅ Learned from your correction!")
+    
+    def export_learning_log(self, filename="learning_log.json"):
+        """Export what the bot has learned"""
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(self.learning_log, f, indent=2, ensure_ascii=False)
+        print(f"💾 Learning log exported to {filename}")
