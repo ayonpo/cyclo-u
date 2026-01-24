@@ -239,9 +239,11 @@ class CompleteAIChatbot:
                     else:
                         self.train(epochs=epoc)
                     continue
-                elif user_input.lower() == 'memory':
-                    print(f"Bot: I remember {len(self.conversation_memory)} conversations!")
-                    sl.speak(f" I remember {len(self.conversation_memory)} conversations!")
+                elif user_input.lower() == 'learning mode':
+                    self.learning_mode = not self.learning_mode
+                    status = "ENABLED" if self.learning_mode else "DISABLED"
+                    print(f"🧠 Learning mode {status}")
+                    sl.speak(f"Learning mode {status.lower()}")
                     continue
                 elif user_input.lower() == 'add data':
                     # Bulk add data
@@ -277,13 +279,20 @@ class CompleteAIChatbot:
                         elif chat_input.lower() == 'learning':
                             re_affirm= input("please confirm you are activating learnig mode")
                             if re_affirm.lower() == 'yes':
-                                response=self.chat_and_learn(chat_input)
+                                # Fix: Get actual user input for learning, not 'learning'
+                                actual_input = input("What would you like to ask? ").strip()
+                                response=self.chat_and_learn(actual_input)
+                                print(f"Bot: {response}")
                                 sl.speak(response)
                             else:
                                 pass
-                        response = self.chat(chat_input)
-                        print(f"Bot: {response}")
-                        sl.speak(response)
+                        else:
+                            if self.learning_mode:
+                                response = self.chat_and_learn(chat_input)
+                            else:
+                                response = self.chat(chat_input)
+                            print(f"Bot: {response}")
+                            sl.speak(response)
                     #response = self.chat(user_input)
                     #print(f"Bot: {response}")
                     #sl.speak(response)
@@ -418,35 +427,60 @@ class AutoLearningChatbot(CompleteAIChatbot):
         super().__init__()
         self.incremental_trainer = IncrementalTrainer(self)
         self.learning_log = []
+        self.learning_mode = False  # Toggle for continuous learning
         
     def chat_and_learn(self, user_input):
         """Chat and automatically learn from good conversations"""
         # Get response
         response = self.chat(user_input)
-        
-        # Ask for feedback (optional)
-        if random.random() < 0.1:  # 10% chance to ask for feedback
+
+        # Always try to learn from conversations (not just 10% of the time)
+        # Learn if the response seems reasonable (basic heuristics)
+        if self.should_learn_from_conversation(user_input, response):
+            self.incremental_trainer.add_conversation(user_input, response, confidence=0.8)
+            print("🧠 Auto-learned from this conversation!")
+
+        # Occasionally ask for feedback (reduced frequency)
+        if random.random() < 0.05:  # 5% chance to ask for feedback
             print("\n🤔 Was that response helpful? (yes/no/correct me)")
-            feedback = input("Your feedback: ").strip().lower()
-            
-            if feedback.startswith('correct'):
-                print("📝 Please provide the correct response:")
-                corrected = input("Correct response: ").strip()
-                self.learn_from_correction(user_input, corrected)
-            elif 'yes' in feedback:
-                self.learn_from_success(user_input, response)
-        
+            try:
+                feedback = input("Your feedback (or press Enter to skip): ").strip().lower()
+                if feedback.startswith('correct'):
+                    print("📝 Please provide the correct response:")
+                    corrected = input("Correct response: ").strip()
+                    self.learn_from_correction(user_input, corrected)
+                elif 'yes' in feedback:
+                    self.incremental_trainer.add_conversation(user_input, response, confidence=1.0)
+                    print("✅ Confirmed as good response!")
+            except:
+                pass  # Skip feedback if input fails
+
         return response
+
+    def should_learn_from_conversation(self, user_input, response):
+        """Determine if this conversation is worth learning from"""
+        # Basic heuristics for learning
+        if len(user_input.split()) < 2 or len(response.split()) < 1:
+            return False  # Too short
+
+        if any(word in user_input.lower() for word in ['quit', 'exit', 'help', 'train']):
+            return False  # Command-like inputs
+
+        if response.lower() in ['i don\'t know', 'sorry', 'error']:
+            return False  # Poor responses
+
+        return True  # Worth learning
     
-    def learn_from_success(self, user_input, response, min_confidence=0.6):
+    def learn_from_success(self, user_input, response, confidence=0.8):
         """Learn from successful responses"""
-        # Check if this is worth learning
-        if len(user_input.split()) >= 2 and len(response.split()) >= 1:
-            self.incremental_trainer.add_conversation(user_input, response)
+        # More lenient learning criteria
+        if len(user_input.split()) >= 1 and len(response.split()) >= 1:
+            self.incremental_trainer.add_conversation(user_input, response, confidence)
             self.learning_log.append({
                 'type': 'auto_learn',
                 'input': user_input,
                 'response': response,
+                'confidence': confidence,
                 'timestamp': datetime.datetime.now().isoformat()
             })
     
