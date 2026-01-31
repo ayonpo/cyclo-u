@@ -53,12 +53,12 @@ def check_file_imports():
     
     files_to_check = [
         ('core', 'CompleteAIChatbot, AutoLearningChatbot'),
-        ('cunn', 'EnhancedChatBrain'),
+        ('c_nn', 'EnhancedChatBrain'),
         ('dcore', 'TrainingManager, SmartDictionary'),
         ('l_brain', 'EmotionalIntelligence'),
         ('r_brain', 'KnowledgeEnhancer'),
         ('comms', 'speak, listen'),
-        ('tcore', 'IncrementalTrainer')
+        
     ]
     
     all_good = True
@@ -147,14 +147,13 @@ def check_external_dependencies(mapping=None, abort_on_missing=False):
 
 
 def root():
-    print("Initiating Upsilon boot up sequence")
-    print("This may take a moment...\n")
-    
+    print("Initiating Cyclo boot up sequence")
+       
     # Check file integrity first
     print("📁 Checking project file integrity...")
     if not check_file_imports():
         print("❌ File integrity check failed! Cannot proceed.")
-        sl.speak('file integrity check failed')
+        #add option to exit code here
         return
     print("✅ All project files validated successfully!\n")
     
@@ -180,32 +179,27 @@ def root():
             """
     dc.download_nltk_data()
     #print('dowload completed and back to main file')
-    sl.speak('booting up, wait for my initialisation')
+    sl.speak('booting up, wait for initialisation')
 
     # instantiate chatbot
     cyclobot = AutoLearningChatbot()
-    print('instantiation done')
+    #print('instantiation done')
 
     # Setup (load data, build dictionary, initialize model)
-    
     if not cyclobot.setup():
         print(" Failed to setup AI!")
-        sl.speak('my set up is missing')
+        sl.speak('set up not done')
         return
-    # Show NLTK capabilities
-    #cyclobot.show_nltk_capabilities()
-
+   
     #Train the model
     print("\n⏳ Training AI...")
     sl.speak('data training commencing')
-    cyclobot.train(epochs=200, learning_rate=0.01)
-
+    cyclobot.train(epochs=150, learning_rate=0.01)
     # Start chatting!
-
     sl.speak('Training is complete')
     cyclobot.interactive_chat()
 
 if __name__ == "__main__":
     #testing the speach
-    print('Cyclo upsilon setup starting')
+    print('Cyclo setup starting')
     root()

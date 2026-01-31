@@ -1,4 +1,4 @@
-"""Complete AI chatbot with NLTK integration, emotional intelligence, and knowledge enhancement."""
+"""Complete AI chatbot with features integration."""
 
 import datetime
 import json
@@ -21,16 +21,12 @@ except Exception:
     word_tokenize = None
 
 # First-party/local imports
-from cunn import EnhancedChatBrain
+from c_nn import EnhancedChatBrain
 from dcore import TrainingManager, SmartDictionary
 from l_brain import EmotionalIntelligence
 from r_brain import KnowledgeEnhancer
-from tcore import IncrementalTrainer
+
 import comms as sl
-
-# Note: `SmartDictionary` and `TrainingManager` implementations are provided
-# by `dcore.py`. We import them from there to avoid duplication.
-
 
 class CompleteAIChatbot:
     def __init__(self):
@@ -44,7 +40,7 @@ class CompleteAIChatbot:
         self.conversation_memory = deque(maxlen=50)
 
     def setup(self):
-        print("🔄 Setting up AI chatbot with NLTK...")
+        print("🔄 Setting up NLTK...")
 
         if not self.trainer.load_training_data():
             return False
@@ -173,6 +169,9 @@ class CompleteAIChatbot:
         elif any(word in input_lower for word in ['search', 'find', 'look up']):
             return self.knowledge_enhancer.web_search(user_input)
 
+        elif any(word in input_lower for word in ['learn about', 'research', 'study']):
+            return self.knowledge_enhancer.search_and_learn(user_input)
+
         return None
 
     def remember_conversation(self, user_input, response):
@@ -213,11 +212,11 @@ class CompleteAIChatbot:
 
     def interactive_chat(self):
         if self.model is None:
-            print("❌ Cyclo Upsi not trained! Run setup() and train() first.")
+            print("❌ Cyclo not trained! Run setup() and train() first.")
             return
 
         print("\n" + "="*60)
-        print("🤖 Hi, i am Upsilon C! 🚀")
+        print("🤖 Hi, i am Cyclo Bond! 🚀")
         print("="*60)
         print("Type 'quit' to exit")
         print()
@@ -225,25 +224,32 @@ class CompleteAIChatbot:
             try:
                 user_input = input("You: ").strip() #sl.listen2() #input("You: ").strip()
 
-
                 if user_input.lower() == 'quit':
                     print("Bot: Goodbye! Thanks for chatting! 👋")
                     sl.speak('hope you had a good time!')
-
                     break
                 elif user_input.lower() == 'train':
-                    sl.speak("input an inter for epochs")
-                    epoc=int(input())
-                    if epoc < 20:
-                        self.train(epochs=50)
-                    else:
-                        self.train(epochs=epoc)
+                    sl.speak("input an integer for epochs")
+                    try:
+                        epochs = int(input("Number of epochs: "))
+                        if epochs <= 0:
+                            print("❌ Epochs must be positive!")
+                            sl.speak("Epochs must be positive")
+                        elif epochs > 500:
+                            print("⚠️ That's a lot of epochs! Using 200 instead.")
+                            sl.speak("Using 200 epochs instead")
+                            self.train(epochs=200)
+                        else:
+                            self.train(epochs=epochs)
+                    except ValueError:
+                        print("❌ Please enter a valid number!")
+                        sl.speak("Please enter a valid number")
                     continue
-                elif user_input.lower() == 'learning mode':
-                    self.learning_mode = not self.learning_mode
-                    status = "ENABLED" if self.learning_mode else "DISABLED"
-                    print(f"🧠 Learning mode {status}")
-                    sl.speak(f"Learning mode {status.lower()}")
+                elif user_input.lower() in ['help', 'commands', '?']:
+                    self.show_help()
+                    continue
+                elif user_input.lower() == 'status':
+                    self.show_status()
                     continue
                 elif user_input.lower() == 'add data':
                     # Bulk add data
@@ -251,7 +257,7 @@ class CompleteAIChatbot:
                     print("1. Import from JSON")
                     print("2. Import from CSV")
                     print("3. Import from text file")
-                    print("4. Add manually")
+                    print("4 or other number. continue and exit data add mode")
             
                     choice = input("Choice: ").strip()
             
@@ -264,28 +270,28 @@ class CompleteAIChatbot:
                     elif choice == '3':
                         filename = input("Text filename: ").strip() or "conversations.txt"
                         self.trainer.import_from_text_file(filename)
+                    else:
+                        continue
                                   
-                        
-                #sl.speak("i am here now at memory")
+                elif user_input.lower() == 'web learn':
+                    topic = input("What topic should I learn about from the web? ").strip()
+                    if topic:
+                        result = self.knowledge_enhancer.search_and_learn(topic)
+                        print(f"Bot: {result}")
+                        sl.speak("Web learning completed")
+                    continue
                 elif user_input.lower() == 'chat':
                     while True:
-                        sl.speak("you can type exit or say the word" \
-                        " exit to go back with the learnig mode" \
-                        "type learning to activate learning mode and confirm your choice by" \
-                        "typing yes after the prompt")
-                        chat_input = input("You (type 'exit' to stop chatting): ").strip()
+                        sl.speak("you can type exit to go back, learning mode to toggle learning, or just chat normally. Learning mode is currently " + ("enabled" if self.learning_mode else "disabled"))
+                        chat_input = input("You (type 'exit' to go back, 'learning mode' to toggle): ").strip()
                         if chat_input.lower() == 'back' or chat_input.lower() == 'exit':
                             break
-                        elif chat_input.lower() == 'learning':
-                            re_affirm= input("please confirm you are activating learnig mode")
-                            if re_affirm.lower() == 'yes':
-                                # Fix: Get actual user input for learning, not 'learning'
-                                actual_input = input("What would you like to ask? ").strip()
-                                response=self.chat_and_learn(actual_input)
-                                print(f"Bot: {response}")
-                                sl.speak(response)
-                            else:
-                                pass
+                        elif chat_input.lower() == 'learning mode':
+                            self.learning_mode = not self.learning_mode
+                            status = "ENABLED" if self.learning_mode else "DISABLED"
+                            print(f"🧠 Learning mode {status}")
+                            sl.speak(f"Learning mode {status.lower()}")
+                            continue
                         else:
                             if self.learning_mode:
                                 response = self.chat_and_learn(chat_input)
@@ -297,13 +303,9 @@ class CompleteAIChatbot:
                     #print(f"Bot: {response}")
                     #sl.speak(response)
                 else:
-                    print("❌ Unknown command. Try: chat, train, add data, exit")
-                    sl.speak("Unknown command. Try: chat, train, add data, exit")
+                    print("❌ Unknown command. Type 'help' for available commands.")
+                    sl.speak("Unknown command. Type help for available commands")
                 
-                #response = self.chat(user_input)
-                
-                #sl.speak(response)
-
             except KeyboardInterrupt:
                 print("\nBot: Goodbye! 👋")
                 sl.speak("Goodbye")
@@ -311,6 +313,54 @@ class CompleteAIChatbot:
             except Exception as e:
                 print(f"Bot: Sorry, I had an error. Lets continue!")
                 sl.speak("Sorry, I had an error. Let's continue!")
+
+
+    def show_help(self):
+        """Display available commands"""
+        print("\n" + "="*60)
+        print("🤖 CYCLO-U CHATBOT COMMANDS")
+        print("="*60)
+        print("📋 MAIN COMMANDS:")
+        print("  chat         - Start interactive chat mode")
+        print("  train        - Train the model with custom epochs")
+        print("  learning mode- Toggle automatic learning on/off")
+        print("  status       - Show current bot status")
+        print("  add data     - Import training data from files")
+        print("  web learn    - Learn from web search results")
+        print("  help         - Show this help message")
+        print("  quit         - Exit the chatbot")
+        print()
+        print("🎯 LEARNING FEATURES:")
+        print(f"  Learning mode: {'ENABLED' if self.learning_mode else 'DISABLED'}")
+        print("  - When enabled, bot learns from all conversations")
+        print("  - Retrains automatically every 10 new examples")
+        print()
+        print("💾 DATA MANAGEMENT:")
+        print("  - Supports JSON, CSV, and text file imports")
+        print("  - Automatic conversation memory (last 50 chats)")
+        print("  - Incremental learning with vocabulary expansion")
+        print("="*60)
+
+        sl.speak("Here are the available commands. Check the console for details.")
+
+
+    def show_status(self):
+        """Display current bot status"""
+        print("\n" + "="*60)
+        print("📊 CYCLO-U BOT STATUS")
+        print("="*60)
+        print(f"🧠 Learning Mode: {'ENABLED' if self.learning_mode else 'DISABLED'}")
+        print(f"🗣️ Conversations in Memory: {len(self.conversation_memory)}")
+        print(f"📚 Training Pairs Loaded: {len(self.trainer.training_pairs) if hasattr(self.trainer, 'training_pairs') else 'Unknown'}")
+        print(f"🔤 Dictionary Size: {self.dictionary.vocab_size if hasattr(self.dictionary, 'vocab_size') else 'Unknown'} words")
+        print(f"🤖 Model Status: {'Loaded' if self.model is not None else 'Not Loaded'}")
+        if hasattr(self, 'incremental_trainer') and self.incremental_trainer.new_data_buffer:
+            print(f"📝 Pending Training Examples: {len(self.incremental_trainer.new_data_buffer)}")
+        print("="*60)
+
+        status_msg = f"Learning mode is {'enabled' if self.learning_mode else 'disabled'}. "
+        status_msg += f"I remember {len(self.conversation_memory)} conversations."
+        sl.speak(status_msg)
 
 
 class IncrementalTrainer:
@@ -434,7 +484,6 @@ class AutoLearningChatbot(CompleteAIChatbot):
         # Get response
         response = self.chat(user_input)
 
-        # Always try to learn from conversations (not just 10% of the time)
         # Learn if the response seems reasonable (basic heuristics)
         if self.should_learn_from_conversation(user_input, response):
             self.incremental_trainer.add_conversation(user_input, response, confidence=0.8)
