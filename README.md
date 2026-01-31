@@ -147,7 +147,7 @@ processes by computer systems...
 complete-ai-chatbot/
 ├── main.py              # Application launcher with dependency checks
 ├── core.py              # Main chatbot logic (CompleteAIChatbot class)
-├── cunn.py              # LSTM neural network (EnhancedChatBrain)
+├── c_nn.py              # LSTM neural network (EnhancedChatBrain)
 ├── dcore.py             # Training data manager & smart dictionary
 ├── l_brain.py           # Emotional intelligence engine
 ├── r_brain.py           # Knowledge enhancer (search, Wikipedia, analysis)
@@ -167,7 +167,7 @@ complete-ai-chatbot/
 |--------|---------|----------------------|
 | `main.py` | Launcher & dependency checker | `check_external_dependencies()`, `main()` |
 | `core.py` | Chatbot orchestrator | `CompleteAIChatbot` |
-| `cunn.py` | Neural inference | `EnhancedChatBrain` (LSTM model) |
+| `c_nn.py` | Neural inference | `EnhancedChatBrain` (LSTM model) |
 | `dcore.py` | Training & vocabulary | `SmartDictionary`, `TrainingManager` |
 | `l_brain.py` | Emotions & empathy | `EmotionalIntelligence` |
 | `r_brain.py` | Knowledge & search | `KnowledgeEnhancer` |
@@ -185,7 +185,7 @@ User Input (Speech/Text)
     ↓
 ├→ [l_brain.py] - Emotion detection & empathetic response
 ├→ [r_brain.py] - Knowledge extraction & search
-└→ [cunn.py] - Neural model inference
+└→ [c_nn.py] - Neural model inference
     ↓
 [core.py] - Combine responses
     ↓
